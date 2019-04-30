@@ -568,12 +568,11 @@ static void begin_file_transfer(std::string userName, std::string password)
 		return;
 	}*/
 
-	// LOGIN HERE
 
 	
 
 	std::ifstream sendFile("data.csv", std::ifstream::in);
-	printf("0x%08x\n", (DWORD&)sendFile);
+	//printf("0x%08x\n", (DWORD&)sendFile);
 	if (sendFile)
 	{
 		sendFile.seekg(0, std::ifstream::beg);
