@@ -12,14 +12,19 @@ class HttpClass
 {
 private:
 	SOCKET* thisSocket;
-	std::string hostaddr;
-	int port;
+	WSADATA* wsaData;
+	struct addrinfo* result = NULL, * ptr = NULL, *hints = NULL;
 
-	void InitializeWinSock();
+
+	std::string hostaddr = "127.0.0.1";
+	int port = 2000;
+	bool InitializeWinSock();
+
+	void ReportError(const char *msg);
 
 public:
-	HttpClass(std::string hostAddress, int port):
-		hostaddr(hostAddress), port(port), thisSocket(NULL){};
+	HttpClass(std::string hostAddress, int port);
+		
 
 	~HttpClass();
 

@@ -1,13 +1,39 @@
 #include "HttpClass.h"
 
 // Initializer function for WinSock.
-void HttpClass::InitializeWinSock()
+
+void HttpClass::ReportError(const char* msg)
 {
+	printf("[!] - An error occured [0x%08x]: %s\n", WSAGetLastError(), msg);
+	return;
 }
 
-HttpClass::~HttpClass()
+HttpClass::HttpClass(std::string hostAddress, int port)
 {
-	// Cleanup WinSock items in here.
+	this->SetHostAddress(hostAddress);
+	this->SetHostPort(port);
+
+	// Do some variable inits
+	this->wsaData = new WSAData;
+	this->thisSocket = new SOCKET(INVALID_SOCKET);
+	if (!this->InitializeWinSock())
+	{
+		this->ReportError("Failed to initialize HttpClass...");
+		return;
+	}
+}
+
+bool HttpClass::InitializeWinSock()
+{
+	ZeroMemory(this->wsaData, sizeof(WSADATA));
+
+	int init_result = WSAStartup(MAKEWORD(2, 2), this->wsaData);
+	if (init_result != 0)
+	{
+		this->ReportError("WSAStartup failed...");
+		return;
+	}
+
 }
 
 
@@ -37,4 +63,10 @@ void HttpClass::SetHostPort(int newPort)
 		return;
 
 	this->port = newPort;
+}
+
+
+HttpClass::~HttpClass()
+{
+	// Cleanup WinSock items in here.
 }
