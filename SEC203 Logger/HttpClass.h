@@ -24,8 +24,10 @@ public:
 	~HttpClass();
 
 
-	std::string GetHostAddress() { return this->hostaddr; }
-	int GetHostPort() { return this->port; }
+	std::string GetHostAddress();
+	void SetHostAddress(std::string newHostAddress);
+	int GetHostPort();
+	void SetHostPort(int newPort);
 
 
 };
