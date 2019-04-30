@@ -404,37 +404,17 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 		printf("Cannot authorize user... Connection socket is bad.\n");
 		return false;
 	}
-	const char* httpHeader;
 
-	httpHeader = {
-		"POST /user/login HTTP/1.1\r\n"
-		"Host: 192.168.0.140:5000\r\n"
-		"User-Agent: Mozilla Firefox/4.0\r\n"
-		"Content-Length: %d\r\n"
-		"Content-Type: application/x-www-form-urlencoded\r\n"
-		"Accept-Charset: utf-8\r\n\r\n"
-	};
-
-	const char* postHeader;
-	postHeader = { "username=%s&password=%s\r\n\r\n" };
-
-	//
-
-
-	char sHeader[sizeof(httpHeader) + 100];
-	char* sData = new char[256];
-	char sRecv[256];
-
-	ZeroMemory(sHeader, sizeof(sHeader));
-	ZeroMemory(sData, sizeof(sData));
+	// Received HTTP response buffer.
+	char *sRecv = new char[256];
 	ZeroMemory(sRecv, sizeof(sRecv));
 
-	std::string postData;
+	std::string postData; // Construct 
 	postData = "username=" + userName;
 	postData += "&passHash=" + password;
 	int dataSize = postData.size();
 
-	std::string header;
+	std::string header; // Construct our raw http header
 	header = "POST /user/login HTTP/1.1\r\n";
 	header += "Host: 192.168.0.140:5000\r\n";
 	header += "Content-Type: application/x-www-form-urlencoded\r\n";
@@ -443,7 +423,6 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 	header += "\r\n";
 	header += postData + "\r\n";
 	header += "\r\n";
-
 
 	//printf("[DataLen]: %i\n[Header Len]: %i\n", dataSize, header.size());
 	//printf("[HEADER]:\n%s\n", header.c_str());
@@ -471,21 +450,21 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 			else
 			{
 				printf("Failure to receive information from the server...\n");
-				delete[] sData;
+				delete[] sRecv;
 				return false;
 			}
 		}
 		else
 		{
 			printf("Failure to send information to the server...\n");
-			delete[] sData;
+			delete[] sRecv;
 			return false;
 		}
 	}
 	else
 	{
 		printf("Something went wrong with assigning the header?\n");
-		delete[] sData;
+		delete[] sRecv;
 		return false;
 	}
 
@@ -496,7 +475,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 static void begin_file_transfer(std::string userName, std::string password)
 {
 
-	std::string outPass;
+	std::string outPass; // Hash our password
 	if(!hash_password(password, &outPass))
 	{
 		printf("Something went wrong in hashing password...\n");
@@ -523,6 +502,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
+	// Change the IP and port here accordingly
 	init_result = getaddrinfo("192.168.0.140", "5000", &hints, &result);
 	if (init_result != 0)
 	{
