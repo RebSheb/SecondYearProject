@@ -435,7 +435,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 	int dataSize = postData.size();
 
 	std::string header;
-	header = "POST /user/create HTTP/1.1\r\n";
+	header = "POST /user/login HTTP/1.1\r\n";
 	header += "Host: 192.168.0.140:5000\r\n";
 	header += "Content-Type: application/x-www-form-urlencoded\r\n";
 	header += "Content-Length: " + std::to_string(dataSize) + "\r\n";
@@ -454,9 +454,19 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 		{
 			if (recv(*connectionSocket, sRecv, sizeof(sRecv), 0) != SOCKET_ERROR)
 			{
-				MessageBoxA(NULL, sRecv, 0, 0);
+				//MessageBoxA(NULL, sRecv, 0, 0);
 				printf("%s\n", sRecv);
-				
+				std::string responseData(sRecv);
+				if (responseData.find("200") != std::string::npos)
+				{
+					printf("Successfully authorized user\n");
+					return true;
+				}
+				else
+				{
+					printf("Error occured.\n[Response]: %s\n", responseData.c_str());
+					return false;
+				}
 			}
 			else
 			{
