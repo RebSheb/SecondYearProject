@@ -25,10 +25,10 @@ HttpClass::HttpClass(std::string hostAddress, int port)
 
 bool HttpClass::InitializeWinSock()
 {
-	if (!memcmp(this->wsaData, 0, sizeof(WSADATA)) == 0)
+	if (!memcmp(this->wsaData, (const void*)'0', sizeof(WSADATA)) == 0)
 	{
 		this->ReportError("Winsock already initialized...");
-		return;
+		return false;
 	}
 	ZeroMemory(this->wsaData, sizeof(WSADATA));
 	ZeroMemory(this->hints, sizeof(addrinfo));
