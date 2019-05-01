@@ -27,6 +27,22 @@ int HttpClass::SendData(std::string data)
 	return TRUE;
 }
 
+int HttpClass::ReceiveData(void * DataOut, size_t bufferSize)
+{
+	if (!this->IsSocketValid())
+	{
+		this->ReportError("ReceiveData reports invalid socket...");
+		return 0;
+	}
+
+	if (recv(*this->thisSocket, (char*)DataOut, bufferSize, 0) == SOCKET_ERROR)
+	{
+		this->ReportError("RecieveData reports SOCKET_ERROR");
+		return SOCKET_ERROR;
+	}
+	return TRUE;
+}
+
 HttpClass::HttpClass(std::string hostAddress, int port)
 {
 	this->SetHostAddress(hostAddress);

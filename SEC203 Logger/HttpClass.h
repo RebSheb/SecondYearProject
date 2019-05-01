@@ -23,6 +23,7 @@ private:
 	void ReportError(const char *msg);
 
 	int SendData(std::string data);
+	int ReceiveData(void* DataOut, size_t bufferSize);
 
 public:
 	HttpClass(std::string hostAddress, int port);
