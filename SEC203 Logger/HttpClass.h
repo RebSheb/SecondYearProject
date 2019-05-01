@@ -34,5 +34,6 @@ public:
 	int GetHostPort();
 	void SetHostPort(int newPort);
 
+	void Shutdown();
 
 };
