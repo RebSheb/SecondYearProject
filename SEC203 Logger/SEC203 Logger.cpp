@@ -6,10 +6,8 @@
 #include <iphlpapi.h>
 #include <thread>
 
-#define WIN32_NO_STATUS
 #include <windows.h>
 #undef WIN32_NO_STATUS
-
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -21,6 +19,7 @@
 #include <bcrypt.h>
 
 #include "HttpClass.h"
+
 #pragma comment(lib, "bcrypt.lib")
 #pragma comment(lib, "ws2_32.lib") // WinSock for posting our file to server...
 
