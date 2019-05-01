@@ -19,6 +19,8 @@
 #include <winnt.h>
 #include <winternl.h>
 #include <bcrypt.h>
+
+#include "HttpClass.h"
 #pragma comment(lib, "bcrypt.lib")
 #pragma comment(lib, "ws2_32.lib") // WinSock for posting our file to server...
 
@@ -36,6 +38,7 @@ DWORD lastAction = 0x0;
 DWORD* keyDuration = new DWORD[253];
 std::string* stringStore = new std::string[253];
 FILE* fp;
+HttpClass *httpClass = NULL;
 
 
 bool FirstEntry = true;
@@ -397,8 +400,9 @@ bool hash_password(std::string password,  std::string * outPassword)
 	return true;
 }
 
-bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string password)
+bool authorize_user(HttpClass *http, std::string userName, std::string password)
 {
+
 	if (connectionSocket == nullptr || *connectionSocket == INVALID_SOCKET)
 	{
 		printf("Cannot authorize user... Connection socket is bad.\n");

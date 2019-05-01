@@ -19,8 +19,10 @@ private:
 	std::string hostaddr = "127.0.0.1";
 	int port = 2000;
 	bool InitializeWinSock();
-
+	bool IsSocketValid();
 	void ReportError(const char *msg);
+
+	int SendData(std::string data);
 
 public:
 	HttpClass(std::string hostAddress, int port);
@@ -33,6 +35,8 @@ public:
 	void SetHostAddress(std::string newHostAddress);
 	int GetHostPort();
 	void SetHostPort(int newPort);
+
+	std::string PostHTTP(std::string uri, std::string contentType, std::string postData);
 
 	void Shutdown();
 
