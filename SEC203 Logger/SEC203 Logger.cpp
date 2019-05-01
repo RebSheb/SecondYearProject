@@ -401,8 +401,19 @@ bool hash_password(std::string password,  std::string * outPassword)
 
 bool authorize_user(HttpClass *http, std::string userName, std::string password)
 {
+	if (http == nullptr)
+	{
+		printf("authorize_user error, http == nullptr\n");
+		return false;
+	}
 
-	if (connectionSocket == nullptr || *connectionSocket == INVALID_SOCKET)
+	std::string constructedPost;
+	constructedPost = "username=" + userName;
+	constructedPost += "&passHash=" + password;
+
+	http->PostHTTP("/user/login", "application/x-www-form-urlencoded", constructedPost);
+
+	/*if (connectionSocket == nullptr || *connectionSocket == INVALID_SOCKET)
 	{
 		printf("Cannot authorize user... Connection socket is bad.\n");
 		return false;
@@ -469,7 +480,9 @@ bool authorize_user(HttpClass *http, std::string userName, std::string password)
 		printf("Something went wrong with assigning the header?\n");
 		delete[] sRecv;
 		return false;
-	}
+	}*/
+
+
 
 	return false;
 }

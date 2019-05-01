@@ -171,10 +171,21 @@ std::string HttpClass::PostHTTP(std::string uri, std::string contentType, std::s
 	finalHeader += postData + "\r\n";
 	finalHeader += "\r\n";
 
+	if (this->SendData(finalHeader) == SOCKET_ERROR)
+	{
+		this->ReportError("Error in HttpClass::PostHTTP()");
+		return "";
+	}
 
+	if (this->ReceiveData(sRecvBuffer, sizeof(sRecvBuffer)) == SOCKET_ERROR)
+	{
+		this->ReportError("Error in HttpClass::ReceiveData()");
+		return "";
+	}
 
-
-	return std::string();
+	std::string retVal(sRecvBuffer);
+	delete[] sRecvBuffer;
+	return retVal;
 }
 
 
