@@ -411,7 +411,22 @@ bool authorize_user(HttpClass *http, std::string userName, std::string password)
 	constructedPost = "username=" + userName;
 	constructedPost += "&passHash=" + password;
 
+	char *sRecv = new char[256];
+
 	http->PostHTTP("/user/login", "application/x-www-form-urlencoded", constructedPost);
+	http->ReceiveData(sRecv, sizeof(sRecv));
+	std::string responseData(sRecv);
+	if (responseData.find("200") != std::string::npos)
+	{
+		printf("Successfully authorized user\n");
+		return true;
+	}
+	else
+	{
+		printf("Error occured.\n[Response]: %s\n", responseData.c_str());
+		return false;
+	}
+
 
 	/*if (connectionSocket == nullptr || *connectionSocket == INVALID_SOCKET)
 	{
@@ -449,17 +464,7 @@ bool authorize_user(HttpClass *http, std::string userName, std::string password)
 			{
 				//MessageBoxA(NULL, sRecv, 0, 0);
 				printf("%s\n", sRecv);
-				std::string responseData(sRecv);
-				if (responseData.find("200") != std::string::npos)
-				{
-					printf("Successfully authorized user\n");
-					return true;
-				}
-				else
-				{
-					printf("Error occured.\n[Response]: %s\n", responseData.c_str());
-					return false;
-				}
+				
 			}
 			else
 			{
@@ -481,9 +486,6 @@ bool authorize_user(HttpClass *http, std::string userName, std::string password)
 		delete[] sRecv;
 		return false;
 	}*/
-
-
-
 	return false;
 }
 
