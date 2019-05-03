@@ -11,13 +11,14 @@
 class HttpClass
 {
 private:
+	std::string hostaddr;
+	int port = 2000;
 	SOCKET* thisSocket;
 	WSADATA* wsaData;
-	struct addrinfo* result = NULL, * ptr = NULL, *hints = NULL;
+	struct addrinfo* result = NULL, *ptr, hints;
+	bool isInit = false;
 
 
-	std::string hostaddr = "127.0.0.1";
-	int port = 2000;
 	bool InitializeWinSock();
 	bool IsSocketValid();
 	void ReportError(const char *msg);
@@ -36,7 +37,7 @@ public:
 	void SetHostAddress(std::string newHostAddress);
 	int GetHostPort();
 	void SetHostPort(int newPort);
-	int ReceiveData(void* DataOut, size_t bufferSize);
+	std::string ReceiveData(size_t bufferSize);
 
 	std::string PostHTTP(std::string uri, std::string contentType, std::string postData);
 

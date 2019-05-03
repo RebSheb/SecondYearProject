@@ -27,29 +27,34 @@ int HttpClass::SendData(std::string data)
 	return TRUE;
 }
 
-int HttpClass::ReceiveData(void * DataOut, size_t bufferSize)
+std::string HttpClass::ReceiveData(size_t bufferSize)
 {
 	if (!this->IsSocketValid())
 	{
 		this->ReportError("ReceiveData reports invalid socket...");
-		return 0;
+		return "400";
 	}
 
-	if (recv(*this->thisSocket, (char*)DataOut, bufferSize, 0) == SOCKET_ERROR)
+	char* sRecv = new char[bufferSize];
+	ZeroMemory(sRecv, bufferSize);
+
+	if (recv(*this->thisSocket, sRecv, bufferSize, 0) == SOCKET_ERROR)
 	{
 		this->ReportError("RecieveData reports SOCKET_ERROR");
-		return SOCKET_ERROR;
+		return "400";
 	}
-	return TRUE;
+	return std::string(sRecv);
 }
 
 HttpClass::HttpClass(std::string hostAddress, int port)
 {
 	this->SetHostAddress(hostAddress);
+	this->hostaddr = hostAddress;
 	this->SetHostPort(port);
 
 	// Do some variable inits
-	this->wsaData = new WSAData;
+	this->wsaData = (WSADATA*)malloc(sizeof(WSADATA));
+	printf("Okpls\n");
 	this->thisSocket = new SOCKET(INVALID_SOCKET);
 	if (!this->InitializeWinSock())
 	{
@@ -60,28 +65,33 @@ HttpClass::HttpClass(std::string hostAddress, int port)
 
 bool HttpClass::InitializeWinSock()
 {
-	if (!memcmp(this->wsaData, (const void*)'0', sizeof(WSADATA)) == 0)
+	/*if (!memcmp(this->wsaData, (const void*)0, sizeof(WSADATA)) == 0)
 	{
 		this->ReportError("Winsock already initialized...");
 		return false;
+	}*/
+	if (this->isInit)
+	{
+		this->ReportError("This instance of HttpClass is already initialized...");
+		return false;
 	}
-	ZeroMemory(this->wsaData, sizeof(WSADATA));
-	ZeroMemory(this->hints, sizeof(addrinfo));
+	ZeroMemory(&this->wsaData, sizeof(WSADATA));
+	ZeroMemory(&this->hints, sizeof(addrinfo));
 
-	int init_result = WSAStartup(MAKEWORD(2, 2), this->wsaData);
+	int init_result = WSAStartup(MAKEWORD(2, 2), (WSADATA*)&this->wsaData);
 	if (init_result != 0)
 	{
 		this->ReportError("WSAStartup failed...");
 		return false;
 	}
 
-	this->hints->ai_family = AF_INET;
-	this->hints->ai_socktype = SOCK_STREAM;
-	this->hints->ai_protocol = IPPROTO_TCP;
+	this->hints.ai_family = AF_INET;
+	this->hints.ai_socktype = SOCK_STREAM;
+	this->hints.ai_protocol = IPPROTO_TCP;
 
 	init_result = getaddrinfo(this->GetHostAddress().c_str(),
 		std::to_string(this->GetHostPort()).c_str(),
-		this->hints, &this->result);
+		&this->hints, &this->result);
 
 	if (init_result != 0)
 	{
@@ -109,6 +119,8 @@ bool HttpClass::InitializeWinSock()
 		this->ReportError(formatMessage.c_str());
 		return false;
 	}
+
+	this->isInit = true;
 }
 
 bool HttpClass::IsSocketValid()
@@ -158,8 +170,7 @@ std::string HttpClass::PostHTTP(std::string uri, std::string contentType, std::s
 		return "Bad socket";
 	}
 
-	char *sRecvBuffer = new char[1024];
-	ZeroMemory(sRecvBuffer, sizeof(sRecvBuffer));
+	std::string sRecvBuffer;
 
 	std::string finalHeader;
 	finalHeader = "POST " + uri + " HTTP/1.1\r\n";
@@ -176,15 +187,14 @@ std::string HttpClass::PostHTTP(std::string uri, std::string contentType, std::s
 		this->ReportError("Error in HttpClass::PostHTTP()");
 		return "";
 	}
-
-	if (this->ReceiveData(sRecvBuffer, sizeof(sRecvBuffer)) == SOCKET_ERROR)
+	sRecvBuffer = this->ReceiveData(1024);
+	if (sRecvBuffer.c_str() == "400")
 	{
 		this->ReportError("Error in HttpClass::ReceiveData()");
 		return "";
 	}
 
 	std::string retVal(sRecvBuffer);
-	delete[] sRecvBuffer;
 	return retVal;
 }
 
@@ -198,7 +208,6 @@ void HttpClass::Shutdown()
 	}
 	WSACleanup();
 	delete this->wsaData;
-	delete this->hints;
 	delete this->ptr;
 	delete this->result;
 }
