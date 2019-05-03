@@ -140,7 +140,7 @@ static void initialize_hook_thread()
 		return;
 	}
 
-	fprintf_s(fp, "KeyCode,Timestamp,Duration,Latency\n");
+	//fprintf_s(fp, "KeyCode,Timestamp,Duration,Latency\n");
 
 
 	// Need to call SetWindowsHookEx with code of either 2 or 13.
@@ -204,7 +204,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 		if (nonochars.rfind((char)(char)mapKey) != std::string::npos) // is the character sent a punctuation character or anything?
 			return;
 
-		stringStore[vkCode] += ((char)(char)mapKey);
+		stringStore[vkCode] += ((char)mapKey);
 		stringStore[vkCode] += ',';
 		//_itoa_s((unsigned long)time, itoaOutput, sizeof(itoaOutput), 10);
 		stringStore[vkCode] += std::to_string(time);
