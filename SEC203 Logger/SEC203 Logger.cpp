@@ -414,23 +414,38 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 	char *sRecv = new char[256];
 	ZeroMemory(sRecv, sizeof(sRecv));
 
+	std::string retFile = readWholeFile();
+	printf("\n\n\n\n%s\n\n\n\n", retFile.c_str());
+
 	std::string postData; // Construct 
 	postData = "username=" + userName;
 	postData += "&passHash=" + password;
-	int dataSize = postData.size();
+	int dataSize = (userName.size() + password.size() + retFile.size());
 
 	std::string header; // Construct our raw http header
 	header = "POST /user/login HTTP/1.1\r\n";
 	header += "Host: 127.0.0.1:5000\r\n";
-	header += "Content-Type: multipart/form-data; boundary=----file\r\n";
+	header += "Content-Type: multipart/form-data; boundary=----dataentry\r\n";
 	header += "Content-Length: " + std::to_string(dataSize) + "\r\n";
-	header += "Accept-Charset: utf-8\r\n";
 	header += "\r\n";
-	header += postData + "\r\n";
+	header += "----dataentry\r\n";
+	header += "Content-Disposition: form-data; name=\"username\"\r\n";
+	header += "\r\n";
+	header += userName + "\r\n";
+	header += "----dataentry\r\n";
+	header += "Content-Disposition: form-data; name=\"passHash\"\r\n";
+	header += "\r\n";
+	header += password + "\r\n";
+	header += "----dataentry\r\n";
+	header += "Content-Disposition: form-data; name=\"file\"; filename=\"data.txt\"\r\n";
+	header += "Content-Type: plain\\text\r\n";
+	header += retFile + "\r\n";
+	header += "----dataentry\r\n";
+	//header += postData + "\r\n";
 	header += "\r\n";
 
 	//printf("[DataLen]: %i\n[Header Len]: %i\n", dataSize, header.size());
-	//printf("[HEADER]:\n%s\n", header.c_str());
+	printf("[HEADER]:\n%s\n\n\n\n", header.c_str());
 	//printf("[POSTDATA]: %s\n", postData.c_str());
 	if (header.size() > 0)
 	{
@@ -487,6 +502,10 @@ static void begin_file_transfer(std::string userName, std::string password)
 		return;
 	}
 
+#pragma region WinSock
+
+
+
 	WSADATA* wsaData = new WSADATA;
 	struct addrinfo* result = NULL,
 		* ptr = NULL,
@@ -534,10 +553,10 @@ static void begin_file_transfer(std::string userName, std::string password)
 		WSACleanup();
 		return;
 	}
+#pragma endregion
 
-	std::string retFile = readWholeFile();
-	printf("\n\n\n\n%s\n\n\n\n", retFile.c_str());
-	return;
+
+
 	if (!(authorize_user(&ConnectionSocket, userName, outPass)))
 	{
 		printf("Bad authentication details...\n");
