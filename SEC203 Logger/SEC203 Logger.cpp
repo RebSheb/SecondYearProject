@@ -416,7 +416,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 
 	std::string header; // Construct our raw http header
 	header = "POST /user/login HTTP/1.1\r\n";
-	header += "Host: 192.168.0.140:5000\r\n";
+	header += "Host: 127.0.0.1:5000\r\n";
 	header += "Content-Type: application/x-www-form-urlencoded\r\n";
 	header += "Content-Length: " + std::to_string(dataSize) + "\r\n";
 	header += "Accept-Charset: utf-8\r\n";
@@ -503,7 +503,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// Change the IP and port here accordingly
-	init_result = getaddrinfo("192.168.0.140", "5000", &hints, &result);
+	init_result = getaddrinfo("127.0.0.1", "5000", &hints, &result);
 	if (init_result != 0)
 	{
 		printf("getaddrinfo failed!\n[GLE]: 0x%08x\n", WSAGetLastError());
@@ -523,7 +523,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 	init_result = connect(ConnectionSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 	if (init_result == SOCKET_ERROR)
 	{
-		printf("Failed to connect to that addres...\n[GLE]: 0x%08x\n", WSAGetLastError());
+		printf("Failed to connect to that address...\n[GLE]: 0x%08x\n", WSAGetLastError());
 		closesocket(ConnectionSocket);
 		ConnectionSocket = INVALID_SOCKET;
 		WSACleanup();
