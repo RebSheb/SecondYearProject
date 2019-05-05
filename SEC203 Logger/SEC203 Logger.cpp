@@ -410,39 +410,52 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 		return false;
 	}
 
-	// Received HTTP response buffer.
-	char *sRecv = new char[256];
-	ZeroMemory(sRecv, sizeof(sRecv));
+
 
 	std::string retFile = readWholeFile();
-	printf("\n\n\n\n%s\n\n\n\n", retFile.c_str());
+	//printf("\n\n\n\n%s\n\n\n\n", retFile.c_str());
 
 	std::string postData; // Construct 
 	postData = "username=" + userName;
 	postData += "&passHash=" + password;
-	int dataSize = (userName.size() + password.size() + retFile.size());
+
 
 	std::string header; // Construct our raw http header
+	std::string body;
+
+	body += "--------------dataentry\r\n";
+	body += "Content-Disposition: form-data; name=\"username\"\r\n";
+	body += "\r\n";
+
+	body += userName + "\r\n";
+
+	body += "--------------dataentry\r\n";
+	body += "Content-Disposition: form-data; name=\"passHash\"\r\n";
+	body += "\r\n";
+
+	body += password + "\r\n";
+
+	body += "--------------dataentry\r\n";
+	body += "Content-Disposition: form-data; name=\"file\"; filename=\"file.csv\"\r\n";
+	body += "Content-Type: text/csv\r\n";
+	body += "\r\n";
+
+	body += retFile + "\r\n";
+
+	body += "--------------dataentry--\r\n";
+	body += "\r\n";
+
 	header = "POST /user/login HTTP/1.1\r\n";
-	header += "Host: 127.0.0.1:5000\r\n";
-	header += "Content-Type: multipart/form-data; boundary=----dataentry\r\n";
-	header += "Content-Length: " + std::to_string(dataSize) + "\r\n";
-	header += "\r\n";
-	header += "----dataentry\r\n";
-	header += "Content-Disposition: form-data; name=\"username\"\r\n";
-	header += "\r\n";
-	header += userName + "\r\n";
-	header += "----dataentry\r\n";
-	header += "Content-Disposition: form-data; name=\"passHash\"\r\n";
-	header += "\r\n";
-	header += password + "\r\n";
-	header += "----dataentry\r\n";
-	header += "Content-Disposition: form-data; name=\"file\"; filename=\"data.txt\"\r\n";
-	header += "Content-Type: plain\\text\r\n";
-	header += retFile + "\r\n";
-	header += "----dataentry\r\n";
-	//header += postData + "\r\n";
-	header += "\r\n";
+	header += "Host: 192.168.0.185:5000\r\n";
+	header += "Content-Type: multipart/form-data; boundary=------------dataentry\r\n";
+	header += "Content-Length: " + std::to_string(body.size()) + "\r\n\r\n";
+	header += body;
+	//header += "\r\n";
+
+
+
+
+	
 
 	//printf("[DataLen]: %i\n[Header Len]: %i\n", dataSize, header.size());
 	printf("[HEADER]:\n%s\n\n\n\n", header.c_str());
@@ -451,11 +464,20 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 	{
 		if (send(*connectionSocket, header.c_str(), header.size(), 0) != SOCKET_ERROR)
 		{
-			if (recv(*connectionSocket, sRecv, sizeof(sRecv), 0) != SOCKET_ERROR)
+			/*if (send(*connectionSocket, body.c_str(), body.size(), 0) == SOCKET_ERROR)
 			{
-				//MessageBoxA(NULL, sRecv, 0, 0);
-				printf("%s\n", sRecv);
-				std::string responseData(sRecv);
+				printf("Error in sending the content body\n");
+				return false;
+			}*/
+			// Received HTTP response buffer.
+			char bigbuff[1024];
+			ZeroMemory(&bigbuff, sizeof(bigbuff));
+			printf("Waiting for data from server\n");
+			if (recv(*connectionSocket, bigbuff, sizeof(bigbuff), 0) != SOCKET_ERROR)
+			{
+				//MessageBoxA(NULL, sRecv, 0, 0);			
+				std::string responseData(bigbuff);
+				printf("%s\n", responseData.c_str());
 				if (responseData.find("200") != std::string::npos)
 				{
 					printf("Successfully authorized user\n");
@@ -470,21 +492,18 @@ bool authorize_user(SOCKET *connectionSocket, std::string userName, std::string 
 			else
 			{
 				printf("Failure to receive information from the server...\n");
-				delete[] sRecv;
 				return false;
 			}
 		}
 		else
 		{
 			printf("Failure to send information to the server...\n");
-			delete[] sRecv;
 			return false;
 		}
 	}
 	else
 	{
 		printf("Something went wrong with assigning the header?\n");
-		delete[] sRecv;
 		return false;
 	}
 
@@ -527,7 +546,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// Change the IP and port here accordingly
-	init_result = getaddrinfo("127.0.0.1", "5000", &hints, &result);
+	init_result = getaddrinfo("192.168.0.185", "5000", &hints, &result);
 	if (init_result != 0)
 	{
 		printf("getaddrinfo failed!\n[GLE]: 0x%08x\n", WSAGetLastError());
