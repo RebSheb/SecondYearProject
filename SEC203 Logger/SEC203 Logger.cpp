@@ -52,6 +52,7 @@ std::string nonochars = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
 
 int main()
 {
+	bool learnMode = false;
 	printf("----------Keylog with timings for SEC203 Project----------\n");
 	printf("ID\tDescription\n--\t-----------\n");
 	printf("1)\tLearn Mode\n");
@@ -68,24 +69,22 @@ int main()
 	{
 		case 1:
 		{
-			printf("[+] - Do function 1\n");
+			learnMode = true;
 			break;
 		}
 		case 2:
 		{
-			printf("[+] - Do function 2\n");
+			learnMode = false;
 			break;
 		}
 		case 3:
 		{
-			printf("[+] - Do function 3\n");
-			break;
+			exit(0);
 		}
 		default:
 			printf("Invalid ID entered\n");
 			return 0;
 	}
-	return 0;
 
 	HANDLE threadHandle = CreateThread(0, 0,
 		(LPTHREAD_START_ROUTINE)& initialize_hook_thread,
@@ -117,20 +116,27 @@ int main()
 
 		}
 
+		do
+		{
+			printf("Please enter your username & password, separated by the return key\n");
+			Sleep(200);
 
-		printf("Please enter your username & password, separated by the return key\n");
-		Sleep(200);
+			printf("[Username]: ");
+			std::cin >> userName;
+			printf("[Password]: ");
+			std::cin >> passAttempt;
 
-		printf("[Username]: ");
-		std::cin >> userName;
-		printf("[Password]: ");
-		std::cin >> passAttempt;
+			printf("\n[*] - Entered values [Username]: %s | [Password]: %s\n", userName.c_str(), passAttempt.c_str());
+			printf("[*] - Sleeping for 200ms to allow buffers to flush to files\n");
+			Sleep(200);
 
-		printf("\n[*] - Entered values [Username]: %s | [Password]: %s\n", userName.c_str(), passAttempt.c_str());
-		printf("[*] - Sleeping for 200ms to allow buffers to flush to files\n");
-		Sleep(200);
+			printf("\n[*] - Beginning file transmission...\n");
 
+			std::thread fileTransferThread(begin_file_transfer, userName, passAttempt);
+			printf("[*] - Waiting on thread...\n");
+			fileTransferThread.join(); // Blocks until file transfer complete...
 
+		} while (learnMode);
 		TerminateThread(threadHandle, 100);
 		printf("[*] - ThreadTerminated...\n");
 		break;
