@@ -22,7 +22,7 @@
 
 #define CRISTALLO_LEN 1024
 
-#define API_HOST "192.168.0.186"
+#define API_HOST "192.168.0.196"
 
 LRESULT WINAPI MyKeyboardHook(int code, WPARAM wParam, LPARAM lParam);
 void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp);
@@ -257,57 +257,6 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 				return;
 			}
 			bigVectors.erase(bigVectors.end()-1);
-			/*fp->close();
-			std::ifstream ssendFile("data.csv", std::ifstream::in);
-			std::string curline;
-			std::vector<std::string> lines;
-			while (std::getline(ssendFile, curline, '\n'))
-			{
-				printf("\n[CURRENT LINE]: %s\n", curline.c_str());
-				lines.push_back(curline);
-			}
-
-			lines.pop_back();
-			//printf("Lines\n");
-			fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
-			for (std::string x : lines)
-			{
-				
-				printf("[STD::STRING X]: %s\n", x.c_str());
-				fp->write((x + "\n").c_str(), x.size()+1);
-				//printf("%s\n", x.c_str());
-			}
-			//printf("\n\n[File]\n%s\n", wholeFile.c_str());
-			//printf("\n[Size]: %d\n", wholeFile.size());
-			//wholeFile.
-			//printf("\n[Size]: %d\n", wholeFile.size());
-			fp->close();
-			fp->open("data.csv", std::fstream::in | std::fstream::out);
-			/*while (fp->is_open())
-			{
-				//fp->close();
-				std::ifstream inFile = std::ifstream("data.csv");
-				if (!inFile.is_open())
-				{
-					printf("bad\n");
-					break;
-				}
-				while (!inFile.eof())
-				{				std::string curLine;
-					std::getline(inFile, curLine, '\n');
-					fileLines.push_back(curLine);
-				}
-				inFile.close();
-
-				//fileLines.erase(fileLines.end());
-				fileLines.pop_back();
-				fp->close();
-				fp->open("data.csv", std::ifstream::trunc);
-				for (int x = 0; x <= fileLines.size(); x++)
-				{
-					fp->write(fileLines[x].c_str(), fileLines[x].size());
-				}
-			}*/
 		}
 		return;
 	}
@@ -380,7 +329,6 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 			{
 				stringStore[vkCode] += std::to_string((keyDuration[vkCode] + (time - keyDuration[vkCode])) - keyDuration[vkCode]);
 			}
-			//stringStore[vkCode] += std::to_string(keyDuration[vkCode] + (time - keyDuration[vkCode]) - lastKey) ;
 		}
 
 		stringStore[vkCode] += '\n';
@@ -392,9 +340,6 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 			bigVectors.push_back(stringStore[vkCode].c_str());
 			stringStore[vkCode].clear(); // Empty out our string buffer for a new character at that location.
 		}
-		//stringStore[vkCode].em
-		//stringStore[vkCode] = "";
-
 	}
 
 }
