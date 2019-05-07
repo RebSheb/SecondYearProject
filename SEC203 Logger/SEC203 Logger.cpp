@@ -38,6 +38,7 @@ DWORD lastKey = 0x0;
 DWORD lastAction = 0x0;
 DWORD* keyDuration = new DWORD[253];
 std::string* stringStore = new std::string[253];
+std::vector<std::string> bigVectors;
 //FILE* fp;
 std::fstream *fp;
 
@@ -95,17 +96,17 @@ int main()
 		printf("\nNow enter your password...: \n");
 		scanf_s("%s", passBuff, sizeof(passBuff));*/
 		printf("Please enter your username & password, separated by the return key\n");
+		Sleep(200);
 		printf("[Username]: ");
 		std::cin >> userName;
 		printf("[Password]: ");
 		std::cin >> passAttempt;
 
 		printf("\n[*] - Entered values [Username]: %s | [Password]: %s\n", userName.c_str(), passAttempt.c_str());
+		printf("[*] - Sleeping for 200ms to allow buffers to flush to files\n");
+		Sleep(200);
 
 
-		//if (passAttempt.compare(hardCodedPass.c_str()) == 0) // Equal strings...
-		//{
-			//printf("Correct password...\n");
 		TerminateThread(threadHandle, 100);
 		printf("[*] - ThreadTerminated...\n");
 		break;
@@ -155,7 +156,7 @@ static void initialize_hook_thread()
 		else
 		{
 			fclose(file);
-			printf("[+] - Closed creating file handle, opening again with fstream...\n");
+			printf("[+] - Closed creating file handle, opening again with fstream...[It's still working Jay]\n");
 			fp->open("data.csv", std::fstream::trunc);
 		}
 	}
@@ -215,12 +216,84 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 	{
 		// When this is found, we will delete the last line in the file.
 		//std::getline(fp, lineCount);
-		break;
+		// Seek to the end of the file - lastData_size; remove it.
+		//int curPos = fp->tellp();
+		//fp->seekp(curPos - lastData_size);
+		// filep should be set to the end
+		if (wasKeyUp)
+		{
+			if (bigVectors.size() == 0)
+			{
+				return;
+			}
+			bigVectors.erase(bigVectors.end()-1);
+			/*fp->close();
+			std::ifstream ssendFile("data.csv", std::ifstream::in);
+			std::string curline;
+			std::vector<std::string> lines;
+			while (std::getline(ssendFile, curline, '\n'))
+			{
+				printf("\n[CURRENT LINE]: %s\n", curline.c_str());
+				lines.push_back(curline);
+			}
+
+			lines.pop_back();
+			//printf("Lines\n");
+			fp->open("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
+			for (std::string x : lines)
+			{
+				
+				printf("[STD::STRING X]: %s\n", x.c_str());
+				fp->write((x + "\n").c_str(), x.size()+1);
+				//printf("%s\n", x.c_str());
+			}
+			//printf("\n\n[File]\n%s\n", wholeFile.c_str());
+			//printf("\n[Size]: %d\n", wholeFile.size());
+			//wholeFile.
+			//printf("\n[Size]: %d\n", wholeFile.size());
+			fp->close();
+			fp->open("data.csv", std::fstream::in | std::fstream::out);
+			/*while (fp->is_open())
+			{
+				//fp->close();
+				std::ifstream inFile = std::ifstream("data.csv");
+				if (!inFile.is_open())
+				{
+					printf("bad\n");
+					break;
+				}
+				while (!inFile.eof())
+				{				std::string curLine;
+					std::getline(inFile, curLine, '\n');
+					fileLines.push_back(curLine);
+				}
+				inFile.close();
+
+				//fileLines.erase(fileLines.end());
+				fileLines.pop_back();
+				fp->close();
+				fp->open("data.csv", std::ifstream::trunc);
+				for (int x = 0; x <= fileLines.size(); x++)
+				{
+					fp->write(fileLines[x].c_str(), fileLines[x].size());
+				}
+			}*/
+		}
+		return;
 	}
 	case VK_LWIN:
 	case VK_RWIN:
 	case VK_RETURN:
-		//case VK_SPACE:
+		if (!fp->is_open())
+		{
+			fp->open("data.csv", std::fstream::in | std::fstream::out);
+		}
+		for (std::string x : bigVectors)
+		{
+			fp->write(x.c_str(), x.size());
+		}
+
+		bigVectors.clear();
 		return;
 
 	default:
@@ -285,7 +358,8 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 		if (fp->is_open())
 		{
 			//printf("[DEBUG]: %s\n", stringStore[vkCode].c_str());
-			fp->write(stringStore[vkCode].c_str(), stringStore[vkCode].size()); // Write it to the data.txt file.
+			//fp->write(stringStore[vkCode].c_str(), stringStore[vkCode].size()); // Write it to the data.txt file.
+			bigVectors.push_back(stringStore[vkCode].c_str());
 			//printf("Written\n");
 			lineCount++;
 			lastData_size = stringStore[vkCode].size();
@@ -650,6 +724,10 @@ std::string readWholeFile()
 
 		delete[] buffer;
 	}
+
+
+	
 	sendFile.close();
+	//fp->close();
 	return wholeFile;
 }
