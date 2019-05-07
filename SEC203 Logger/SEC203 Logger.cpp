@@ -6,9 +6,7 @@
 #include <iphlpapi.h>
 #include <thread>
 
-#define WIN32_NO_STATUS
 #include <windows.h>
-#undef WIN32_NO_STATUS
 
 #include <iostream>
 #include <fstream>
@@ -43,8 +41,6 @@ std::vector<std::string> bigVectors;
 std::fstream *fp;
 
 
-int lineCount = 0;
-int lastData_size = 0;
 bool FirstEntry = true;
 DWORD prevKey = 0x0;
 
@@ -57,6 +53,40 @@ std::string nonochars = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
 int main()
 {
 	printf("----------Keylog with timings for SEC203 Project----------\n");
+	printf("ID\tDescription\n--\t-----------\n");
+	printf("1)\tLearn Mode\n");
+	printf("2)\tLogin Mode\n");
+	printf("3)\tExit\n");
+
+	std::string choice;
+	printf("Enter your choice: \n");
+	std::cin >> choice;
+
+	printf("[Choice]: %s\n", choice.c_str());
+	int ichoice = std::atoi(choice.c_str());
+	switch (ichoice)
+	{
+		case 1:
+		{
+			printf("[+] - Do function 1\n");
+			break;
+		}
+		case 2:
+		{
+			printf("[+] - Do function 2\n");
+			break;
+		}
+		case 3:
+		{
+			printf("[+] - Do function 3\n");
+			break;
+		}
+		default:
+			printf("Invalid ID entered\n");
+			return 0;
+	}
+	return 0;
+
 	HANDLE threadHandle = CreateThread(0, 0,
 		(LPTHREAD_START_ROUTINE)& initialize_hook_thread,
 		0, 0, 0);
@@ -80,23 +110,17 @@ int main()
 			exit(0);
 		}
 
-		if (thread_status != STILL_ACTIVE)
+		if (thread_status != 0x103)
 		{
 			// MSDN recommends not using STILL_ACTIVE but this is an example program
 			printf("[?] - Thread status is not STILL_ACTIVE, does this mean it has been terminated?\n");
 
 		}
 
-		userName = "";
-		passAttempt = "";
 
-		/*printf("Please enter your username...: \n");
-		scanf_s("%s", userBuff, sizeof(userBuff));
-		getchar();
-		printf("\nNow enter your password...: \n");
-		scanf_s("%s", passBuff, sizeof(passBuff));*/
 		printf("Please enter your username & password, separated by the return key\n");
 		Sleep(200);
+
 		printf("[Username]: ");
 		std::cin >> userName;
 		printf("[Password]: ");
@@ -360,9 +384,6 @@ void WriteToFile(DWORD vkCode, DWORD time, bool wasKeyUp)
 			//printf("[DEBUG]: %s\n", stringStore[vkCode].c_str());
 			//fp->write(stringStore[vkCode].c_str(), stringStore[vkCode].size()); // Write it to the data.txt file.
 			bigVectors.push_back(stringStore[vkCode].c_str());
-			//printf("Written\n");
-			lineCount++;
-			lastData_size = stringStore[vkCode].size();
 			stringStore[vkCode].clear(); // Empty out our string buffer for a new character at that location.
 		}
 		//stringStore[vkCode].em
@@ -704,6 +725,7 @@ static void begin_file_transfer(std::string userName, std::string password)
 std::string readWholeFile()
 {
 	std::string wholeFile;
+	fp->flush(); // Synchronize data to the file.
 	std::ifstream sendFile("data.csv", std::ifstream::in);
 	//printf("0x%08x\n", (DWORD&)sendFile);
 	if (sendFile)
@@ -724,10 +746,6 @@ std::string readWholeFile()
 
 		delete[] buffer;
 	}
-
-
-	
 	sendFile.close();
-	//fp->close();
 	return wholeFile;
 }
