@@ -139,7 +139,7 @@ static void initialize_hook_thread()
 
 	//printf("[Thread]: 0x%08x started...\n", GetCurrentThreadId());
 
-	fp = new std::fstream("data.csv", std::fstream::trunc);
+	fp = new std::fstream("data.csv", std::fstream::in | std::fstream::out | std::fstream::trunc);
 	if (!fp->is_open())
 	{
 		printf("[!] - An error occured opening data.csv :(\n");
@@ -157,7 +157,7 @@ static void initialize_hook_thread()
 		{
 			fclose(file);
 			printf("[+] - Closed creating file handle, opening again with fstream...[It's still working Jay]\n");
-			fp->open("data.csv", std::fstream::trunc);
+			fp->open("data.csv", std::fstream::in| std::fstream::out | std::fstream::trunc);
 		}
 	}
 
