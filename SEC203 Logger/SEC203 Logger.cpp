@@ -54,14 +54,14 @@ std::string nonochars = "!\"£$%^&*()_+-={}[]:;@'~#<,>.?/|\\+";
 
 int main()
 {
-	printf("Keylog with timings for SEC203 Project\n");
+	printf("----------Keylog with timings for SEC203 Project----------\n");
 	HANDLE threadHandle = CreateThread(0, 0,
 		(LPTHREAD_START_ROUTINE)& initialize_hook_thread,
 		0, 0, 0);
 
 	if (threadHandle == INVALID_HANDLE_VALUE)
 	{
-		printf("Thread error...[GLE]: 0x%08x\n", GetLastError());
+		printf("[!] - Thread error...[GLE]: 0x%08x\n", GetLastError());
 		return 0;
 	}
 
@@ -73,7 +73,7 @@ int main()
 	{
 		if (GetExitCodeThread(threadHandle, &thread_status) == 0)
 		{
-			printf("An error has occured in GetExitCodeThread(), 0x%08x\n", GetLastError());
+			printf("[!] - An error has occured in GetExitCodeThread(), 0x%08x\n", GetLastError());
 			TerminateThread(threadHandle, 0);
 			exit(0);
 		}
@@ -81,33 +81,32 @@ int main()
 		if (thread_status != STILL_ACTIVE)
 		{
 			// MSDN recommends not using STILL_ACTIVE but this is an example program
-			printf("Thread status is not STILL_ACTIVE, does this mean it has been terminated?\n");
+			printf("[?] - Thread status is not STILL_ACTIVE, does this mean it has been terminated?\n");
 
 		}
 
 		userName = "";
-		char* userBuff = new char[16];
-		char* passBuff = new char[16];
 		passAttempt = "";
-		std::string hardCodedPass = "pass";
 
 		/*printf("Please enter your username...: \n");
 		scanf_s("%s", userBuff, sizeof(userBuff));
 		getchar();
 		printf("\nNow enter your password...: \n");
 		scanf_s("%s", passBuff, sizeof(passBuff));*/
-
+		printf("Please enter your username & password, separated by the return key\n");
+		printf("[Username]: ");
 		std::cin >> userName;
+		printf("[Password]: ");
 		std::cin >> passAttempt;
 
-		printf("\nEntered values [Username]: %s | [Password]: %s\n", userName.c_str(), passAttempt.c_str());
+		printf("\n[*] - Entered values [Username]: %s | [Password]: %s\n", userName.c_str(), passAttempt.c_str());
 
 
 		//if (passAttempt.compare(hardCodedPass.c_str()) == 0) // Equal strings...
 		//{
 			//printf("Correct password...\n");
 		TerminateThread(threadHandle, 100);
-		printf("ThreadTerminated...\n");
+		printf("[*] - ThreadTerminated...\n");
 		break;
 		//return 0;
 	//}
@@ -116,18 +115,20 @@ int main()
 	if (fp.is_open())
 	{
 		fp.close();
-		printf("File wasn't closed... Closing...\n");
+		printf("[*] - File wasn't closed... Closing...\n");
 	}
 
-	printf("\nBeginning file trasmission...\n");
+	printf("\n[*] - Beginning file trasmission...\n");
 
 	std::thread fileTransferThread(begin_file_transfer, userName, passAttempt);
-	printf("Waiting on thread...\n");
+	printf("[*] - Waiting on thread...\n");
 
 	fileTransferThread.join(); // Blocks until file transfer complete...
 
-	printf("File Transfer thread joined...\n");
+	printf("[+] - File Transfer thread joined...\n");
 
+
+	system("pause");
 }
 
 static void initialize_hook_thread()
@@ -136,13 +137,26 @@ static void initialize_hook_thread()
 
 	//printf("[Thread]: 0x%08x started...\n", GetCurrentThreadId());
 
-	fp.open("data.csv");
+	fp = std::fstream("data.csv", std::fstream::trunc);
 	if (!fp.is_open())
 	{
-		printf("An error occured opening data.csv :(\n");
-		delete[] keyDuration;
-		ExitThread(100);
-		return;
+		printf("[!] - An error occured opening data.csv :(\n");
+		FILE *file;
+		fopen_s(&file, "data.csv", "w");
+		if (file == nullptr)
+		{
+			printf("[!] - Failure to create data.csv, closing thread...\n");
+
+			delete[] keyDuration;
+			ExitThread(100);
+			return;
+		}
+		else
+		{
+			fclose(file);
+			printf("[+] - Closed creating file handle, opening again with fstream...\n");
+			fp.open("data.csv", std::fstream::trunc);
+		}
 	}
 
 	//fprintf_s(fp, "KeyCode,Timestamp,Duration,Latency\n");
@@ -154,7 +168,7 @@ static void initialize_hook_thread()
 	myKbHook = SetWindowsHookEx(WH_KEYBOARD_LL, MyKeyboardHook, NULL, 0);
 	if (myKbHook == NULL)
 	{
-		printf("There was an error starting SetWindowsHookEx\n");
+		printf("[!!] - There was an error starting SetWindowsHookEx\n");
 		printf("[GLE]: 0x%08x\n", GetLastError());
 		fp.close();
 		delete[] keyDuration;
